@@ -64,7 +64,7 @@ services:
     volumes:
       - logs:/var/log
   go-requester:
-    image: vpapidokha/go-requester:1.1
+    image: vpapidokha/go-requester:1.3
     networks:
       - localprom
     command: "http://go-prom-metrics:2112/albums"
