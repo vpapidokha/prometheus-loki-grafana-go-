@@ -1,0 +1,79 @@
+version: '3'
+services:
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - "./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "./prometheus/rules.yml:/etc/prometheus/rules.yml"
+    networks:
+      - localprom
+    ports:
+      - 9090:9090
+  node-exporter:
+    image: prom/node-exporter
+    networks:
+      - localprom
+    ports:
+      - 9100:9100
+  loki:
+    image: grafana/loki:2.9.0
+    networks:
+      - localprom
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./loki/config.yml:/etc/loki/config.yml
+      - ./loki/rules.yml:/etc/loki/rules/rules.yml
+  promtail:
+    image: grafana/promtail:2.9.0
+    networks:
+      - localprom
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - logs:/var/log
+      - ./promtail/config.yml:/etc/promtail/config.yml
+
+  grafana:
+    image: grafana/grafana
+    networks:
+      - localprom
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+     - '3000:3000'
+    volumes:
+      - ./grafana:/etc/grafana/provisioning/datasources
+
+  alert-manager:
+    image: prom/alertmanager
+    volumes:
+      - "./alertmanager/alertmanager.yml:/alertmanager/alertmanager.yml"
+    networks:
+      - localprom
+    ports:
+      - 9093:9093
+
+  go-prom-metrics:
+    image: vpapidokha/go-prom-metrics:1.1
+    networks:
+      - localprom
+    ports:
+      - 2112:2112
+    volumes:
+      - logs:/var/log
+  go-requester:
+    image: vpapidokha/go-requester:1.1
+    networks:
+      - localprom
+    command: "http://go-prom-metrics:2112/albums"
+    volumes:
+      - logs:/var/log
+
+networks:
+  localprom:
+    driver: bridge
+
+volumes:
+  logs:

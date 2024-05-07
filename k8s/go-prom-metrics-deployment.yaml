@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.33.0 (HEAD)
+  labels:
+    io.kompose.service: go-prom-metrics
+  name: go-prom-metrics
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      io.kompose.service: go-prom-metrics
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.33.0 (HEAD)
+      labels:
+        io.kompose.network/prometheus-loki-grafana-go-localprom: "true"
+        io.kompose.service: go-prom-metrics
+    spec:
+      containers:
+        - name: go-prom-metrics
+          image: vpapidokha/go-prom-metrics:1.1
+          ports:
+            - containerPort: 2112
+              hostPort: 2112
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /var/log
+              name: logs
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+        - name: promtail
+          image: grafana/promtail:latest
+          volumeMounts:
+            - name: logs
+              mountPath: /var/log
+            - mountPath: /etc/promtail/config.yml
+              name: go-prom-metrics-cm
+              subPath: config.yml
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+      restartPolicy: Always
+      volumes:
+        - name: logs
+          hostPath:
+            path: /var/log
+        - name: go-prom-metrics-cm
+          configMap:
+            items:
+              - key: promtail-config.yml
+                path: config.yml
+            name: go-prom-metrics-cm

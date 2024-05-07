@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.33.0 (HEAD)
+  labels:
+    io.kompose.service: go-requester
+  name: go-requester
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      io.kompose.service: go-requester
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.33.0 (HEAD)
+      labels:
+        io.kompose.network/prometheus-loki-grafana-go-localprom: "true"
+        io.kompose.service: go-requester
+    spec:
+      containers:
+        - name: go-requester
+          args:
+            - http://go-prom-metrics:2112/albums
+          image: vpapidokha/go-requester:1.1
+          volumeMounts:
+            - mountPath: /var/log
+              name: logs
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+        - name: promtail
+          image: grafana/promtail:latest
+          volumeMounts:
+            - name: logs
+              mountPath: /var/log
+            - mountPath: /etc/promtail/config.yml
+              name: requester-cm
+              subPath: config.yml
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+      restartPolicy: Always
+      volumes:
+        - name: logs
+          hostPath:
+            path: /var/log
+        - name: requester-cm
+          configMap:
+            items:
+              - key: promtail-config.yml
+                path: config.yml
+            name: go-requester-cm

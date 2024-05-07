@@ -1,0 +1,12 @@
+groups:
+  - name: loki-example
+    rules:
+      - alert: HighPercentageError
+        expr: |
+          sum({app=~"go-.*"}) > 5
+        for: 1s
+        labels:
+          severity: warning
+        annotations:
+          summary: High request latency
+          title: "High LogRate Alert"

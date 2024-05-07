@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.33.0 (HEAD)
+  labels:
+    io.kompose.service: loki
+  name: loki
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: loki
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.33.0 (HEAD)
+      labels:
+        io.kompose.network/prometheus-loki-grafana-go-localprom: "true"
+        io.kompose.service: loki
+    spec:
+      containers:
+        - name: loki
+          args:
+            - -config.file=/etc/loki/config.yml
+          image: grafana/loki:2.9.0
+          ports:
+            - containerPort: 3100
+              hostPort: 3100
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /etc/loki/config.yml
+              name: loki-cm
+              subPath: config.yml
+            - mountPath: /etc/loki/rules/rules.yml
+              name: loki-cm
+              subPath: rules.yml
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+      restartPolicy: Always
+      volumes:
+        - configMap:
+            items:
+              - key: config.yml
+                path: config.yml
+              - key: rules.yml
+                path: rules.yml
+            name: loki-cm
+          name: loki-cm
