@@ -1,3 +1,33 @@
+---
+apiVersion: v1
+kind: ConfigMap
+data:
+  promtail-config.yml: |-
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+
+    positions:
+      filename: /tmp/positions.yaml
+
+    clients:
+      - url: http://loki:3100/loki/api/v1/push
+
+    scrape_configs:
+    - job_name: go-requester
+      static_configs:
+      - targets:
+          - localhost
+        labels:
+          app: go-requester
+          __path__: /var/log/go-requester.log
+metadata:
+  annotations:
+    use-subpath: "true"
+  labels:
+    io.kompose.service: promtail
+  name: go-requester-cm
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

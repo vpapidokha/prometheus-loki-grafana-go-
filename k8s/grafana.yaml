@@ -1,3 +1,30 @@
+---
+apiVersion: v1
+kind: ConfigMap
+data:
+  datasource.yml: |-
+    apiVersion: 1
+
+    datasources:
+    - name: Prometheus
+      type: prometheus
+      url: http://prometheus:9090 
+      isDefault: true
+      access: proxy
+      editable: true
+
+    - name: Loki
+      type: loki
+      url: http://loki:3100
+      access: proxy
+      basicAuth: false
+      isDefault: false
+      editable: false
+metadata:
+  labels:
+    io.kompose.service: grafana
+  name: grafana-cm
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -50,3 +77,20 @@ spec:
         - configMap:
             name: grafana-cm
           name: grafana-cm
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.33.0 (HEAD)
+  labels:
+    io.kompose.service: grafana
+  name: grafana
+spec:
+  ports:
+    - name: "3000"
+      port: 3000
+      targetPort: 3000
+  selector:
+    io.kompose.service: grafana
